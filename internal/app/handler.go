@@ -7,58 +7,42 @@ import (
 	"github.com/google/uuid"
 	"go_test_task_4/pkg/response"
 	"net/http"
-	"time"
 )
 
-const (
-	sessionCleanupInterval = 60 * time.Minute
-	sessionID              = "session_id"
-)
+const sessionID = "session_id"
 
 const (
-	objectsLimit       = 3
-	objectLimitMessage = "Object limit exceeded"
+	taskLimit        = 3
+	taskLimitMessage = "task limit exceeded"
 )
 
 const getLinksPath = "/links"
 
 type Handler struct {
-	objectsCounter map[string]uint8
+	service    *Service
+	repository *Repository
 }
 
 func NewHandler(router *http.ServeMux) {
-	handler := Handler{
-		objectsCounter: make(map[string]uint8),
-	}
-
-	// session reset
-	go func() {
-		for range time.Tick(sessionCleanupInterval) {
-			handler.objectsCounter = make(map[string]uint8)
-		}
-	}()
+	handler := Handler{}
 
 	router.HandleFunc(fmt.Sprintf("POST %s", getLinksPath), handler.GetUserLinks())
 
 }
 
-func (handler *Handler) GetUserLinks() http.HandlerFunc {
+func (handler *Handler) CreateTask() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		session, cookieErr := r.Cookie(sessionID)
-		var objects uint8
 		if cookieErr != nil {
 			uuidString := uuid.NewString()
-			handler.objectsCounter[uuidString] = 0
+			handler.repository.AddNewUser(uuidString)
 			http.SetCookie(w, getNewCookie(uuidString))
 		} else {
 			sessionUUID := session.Value
-			if objects, ok := handler.objectsCounter[sessionUUID]; !ok {
-				handler.objectsCounter[sessionUUID] = 0
-			} else {
-				if objects >= objectsLimit {
-					http.Error(w, objectLimitMessage, http.StatusBadRequest)
-					return
-				}
+			userTaskCount := handler.repository.GetUserTaskCount(sessionUUID)
+			if userTaskCount >= taskLimit {
+				http.Error(w, taskLimitMessage, http.StatusTooManyRequests)
+				return
 			}
 		}
 
@@ -76,18 +60,20 @@ func (handler *Handler) GetUserLinks() http.HandlerFunc {
 			http.Error(w, bodyDecodeErr.Error(), http.StatusBadRequest)
 			return
 		}
-		validLinks, invalidLinks := ValidateURL(&links)
+		validLinks, invalidLinks := validateURL(&links)
 		if validLinks == nil {
-			errorMessage := getErrorMessage(invalidLinks)
-			linkResponse := LinkResponse{
-				Result:       nil,
-				ErrorMessage: errorMessage,
-			}
+			//errorMessage := getErrorMessage(invalidLinks)
+			//linkResponse := Task{
+			//	Result:       nil,
+			//	ErrorMessage: errorMessage,
+			//}
 			response.JsonResponse(w, &linkResponse, http.StatusBadRequest)
 			return
 		}
 		if validLinks != nil {
+			for counter := objects; counter <= 3; counter++ {
 
+			}
 		}
 	}
 }
