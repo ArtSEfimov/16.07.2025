@@ -4,12 +4,23 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"github.com/google/uuid"
+	"go_test_task_4/pkg/response"
 	"net/http"
-	"strings"
 	"time"
 )
 
-const sessionCleanupInterval = 60 * time.Minute
+const (
+	sessionCleanupInterval = 60 * time.Minute
+	sessionID              = "session_id"
+)
+
+const (
+	objectsLimit       = 3
+	objectLimitMessage = "Object limit exceeded"
+)
+
+const getLinksPath = "/links"
 
 type Handler struct {
 	objectsCounter map[string]uint8
@@ -27,12 +38,29 @@ func NewHandler(router *http.ServeMux) {
 		}
 	}()
 
-	router.HandleFunc("POST /links", handler.GetUserLinks())
+	router.HandleFunc(fmt.Sprintf("POST %s", getLinksPath), handler.GetUserLinks())
 
 }
 
 func (handler *Handler) GetUserLinks() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		session, cookieErr := r.Cookie(sessionID)
+		var objects uint8
+		if cookieErr != nil {
+			uuidString := uuid.NewString()
+			handler.objectsCounter[uuidString] = 0
+			http.SetCookie(w, getNewCookie(uuidString))
+		} else {
+			sessionUUID := session.Value
+			if objects, ok := handler.objectsCounter[sessionUUID]; !ok {
+				handler.objectsCounter[sessionUUID] = 0
+			} else {
+				if objects >= objectsLimit {
+					http.Error(w, objectLimitMessage, http.StatusBadRequest)
+					return
+				}
+			}
+		}
 
 		var links LinkRequest
 		bodyReader := bufio.NewReader(r.Body)
@@ -49,16 +77,17 @@ func (handler *Handler) GetUserLinks() http.HandlerFunc {
 			return
 		}
 		validLinks, invalidLinks := ValidateURL(&links)
-		if invalidLinks != nil {
-			var invalidURLs strings.Builder
-			for _, invalidLink := range invalidLinks {
-				invalidURLs.WriteString(invalidLink.URL)
-			}
-			errorMessage := fmt.Sprintf("Invalid links: %s", invalidURLs.String())
-			http.Error(w, errorMessage, http.StatusBadRequest)
-		}
 		if validLinks == nil {
-			
+			errorMessage := getErrorMessage(invalidLinks)
+			linkResponse := LinkResponse{
+				Result:       nil,
+				ErrorMessage: errorMessage,
+			}
+			response.JsonResponse(w, &linkResponse, http.StatusBadRequest)
+			return
+		}
+		if validLinks != nil {
+
 		}
 	}
 }
