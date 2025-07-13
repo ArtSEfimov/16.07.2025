@@ -1,7 +1,8 @@
 package app
 
 type Link struct {
-	URL string `json:"url" validate:"url"`
+	URL             string `json:"url" validate:"url"`
+	ObjectExtension string
 }
 
 type LinkRequest struct {
@@ -9,9 +10,10 @@ type LinkRequest struct {
 }
 
 type Task struct {
-	Id         uint64   `json:"id"`
-	Status     string   `json:"status"`
-	Links      []string `json:"links"`
-	Errors     []string `json:"errors"`
-	ArchiveURL string   `json:"archiveURL"`
+	ID            uint64            `json:"id"`
+	Status        string            `json:"status"`
+	ValidLinks    []Link            `json:"valid_links"`
+	InvalidLinks  []Link            `json:"invalid_links"`
+	ErrorMessages map[string]string `json:"error_messages"`
+	ArchiveURL    string            `json:"archiveURL"`
 }

@@ -1,18 +1,15 @@
 package app
 
 import (
-	"fmt"
 	"net/http"
-	"strings"
 )
 
-func getErrorMessage(invalidLinks []Link) string {
-	var invalidURLs strings.Builder
+func createErrorMessages(messages map[string]string, invalidLinks []Link, message string) {
 	for _, invalidLink := range invalidLinks {
-		invalidURLs.WriteString(invalidLink.URL)
+		if _, ok := messages[invalidLink.URL]; !ok {
+			messages[invalidLink.URL] = message
+		}
 	}
-
-	return fmt.Sprintf("Invalid links: %s", invalidURLs.String())
 }
 
 func getNewCookie(uuid string) *http.Cookie {

@@ -6,17 +6,9 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"go_test_task_4/pkg/response"
+	"io"
 	"net/http"
 )
-
-const sessionID = "session_id"
-
-const (
-	taskLimit        = 3
-	taskLimitMessage = "task limit exceeded"
-)
-
-const getLinksPath = "/links"
 
 type Handler struct {
 	service    *Service
@@ -26,27 +18,27 @@ type Handler struct {
 func NewHandler(router *http.ServeMux) {
 	handler := Handler{}
 
-	router.HandleFunc(fmt.Sprintf("POST %s", getLinksPath), handler.GetUserLinks())
+	router.HandleFunc(fmt.Sprintf("POST %s", getLinksPath), handler.CreateTask())
 
 }
 
 func (handler *Handler) CreateTask() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		session, cookieErr := r.Cookie(sessionID)
-		if cookieErr != nil {
-			uuidString := uuid.NewString()
-			handler.repository.AddNewUser(uuidString)
-			http.SetCookie(w, getNewCookie(uuidString))
-		} else {
-			sessionUUID := session.Value
-			userTaskCount := handler.repository.GetUserTaskCount(sessionUUID)
-			if userTaskCount >= taskLimit {
-				http.Error(w, taskLimitMessage, http.StatusTooManyRequests)
-				return
-			}
+		if handler.repository.GetTaskCount() >= taskLimit {
+			http.Error(w, taskLimitMessage, http.StatusTooManyRequests)
+			return
 		}
 
-		var links LinkRequest
+		session, cookieErr := r.Cookie(sessionID)
+		var userUUID string
+		if cookieErr != nil {
+			userUUID = uuid.NewString()
+			handler.repository.AddNewUser(userUUID)
+			http.SetCookie(w, getNewCookie(userUUID))
+		} else {
+			userUUID = session.Value
+		}
+
 		bodyReader := bufio.NewReader(r.Body)
 		defer func() {
 			err := r.Body.Close()
@@ -55,25 +47,58 @@ func (handler *Handler) CreateTask() http.HandlerFunc {
 			}
 		}()
 
+		var links LinkRequest
 		bodyDecodeErr := json.NewDecoder(bodyReader).Decode(&links)
-		if bodyDecodeErr != nil {
+		if bodyDecodeErr != nil && bodyDecodeErr != io.EOF { // invalid json
 			http.Error(w, bodyDecodeErr.Error(), http.StatusBadRequest)
 			return
 		}
-		validLinks, invalidLinks := validateURL(&links)
+		if links.Links == nil {
+			linkResponse := Task{
+				ID:            handler.service.GetTaskID(),
+				Status:        taskStatusCreated,
+				ValidLinks:    nil,
+				InvalidLinks:  nil,
+				ErrorMessages: nil,
+				ArchiveURL:    "",
+			}
+			response.JsonResponse(w, &linkResponse, http.StatusCreated)
+			return
+		}
+
+		validLinks, invalidLinks := validateURLFormat(&links)
+		var errorMessages map[string]string
 		if validLinks == nil {
-			//errorMessage := getErrorMessage(invalidLinks)
-			//linkResponse := Task{
-			//	Result:       nil,
-			//	ErrorMessage: errorMessage,
-			//}
-			response.JsonResponse(w, &linkResponse, http.StatusBadRequest)
+			createErrorMessages(errorMessages, invalidLinks, errInvalidLinkFormat)
+			linkResponse := Task{
+				ID:            handler.service.GetTaskID(),
+				Status:        taskStatusCreated,
+				ValidLinks:    nil,
+				InvalidLinks:  invalidLinks,
+				ErrorMessages: errorMessages,
+				ArchiveURL:    "",
+			}
+			response.JsonResponse(w, &linkResponse, http.StatusCreated)
 			return
 		}
 		if validLinks != nil {
-			for counter := objects; counter <= 3; counter++ {
+			for _, link := range validLinks {
+				if isURLAccessible(link.URL) {
+					if ext, isValidExt := validateObjectExtension(link.URL); isValidExt {
+						link.ObjectExtension = ext
+						handler.repository.AddNewObject(userUUID, link)
+						// TODO счиатем количество ссылок для юзера и действуем соответсвенно
+					} else {
+						invalidLinks = append(invalidLinks, link)
+						errorMessages[link.URL] = errUnsupportedFileType
+					}
+				} else {
+					invalidLinks = append(invalidLinks, link)
+					errorMessages[link.URL] = errInaccessibleLink
+				}
 
 			}
 		}
+
 	}
 }

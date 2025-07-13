@@ -2,20 +2,16 @@ package app
 
 import (
 	"github.com/go-playground/validator/v10"
-	"net/url"
-	"path"
-	"strings"
+	"io"
+	"net/http"
 )
 
 const (
-	jpg  = ".jpg"
-	jpeg = ".jpeg"
-	pdf  = ".pdf"
+	jpg = ".jpg"
+	pdf = ".pdf"
 )
 
-var validExtensions = map[string]struct{}{jpg: {}, jpeg: {}, pdf: {}}
-
-func validateURL(request *LinkRequest) ([]Link, []Link) {
+func validateURLFormat(request *LinkRequest) ([]Link, []Link) {
 	newLinkValidator := validator.New()
 	var validLinks []Link
 	var invalidLinks []Link
@@ -31,12 +27,60 @@ func validateURL(request *LinkRequest) ([]Link, []Link) {
 	return validLinks, invalidLinks
 }
 
-func validateObjectExtension(urlString string) (string, bool) {
-	urlObject, _ := url.Parse(urlString)
-	urlObjectPath := urlObject.Path
-	ext := strings.ToLower(path.Ext(urlObjectPath))
-	if _, ok := validExtensions[ext]; ok {
-		return ext, true
+func isURLAccessible(urlString string) bool {
+	response, responseErr := http.Head(urlString)
+	if responseErr == nil && response.StatusCode == http.StatusOK {
+		err := response.Body.Close()
+		if err != nil {
+			panic(err)
+		}
+		return true
 	}
-	return "", false
+
+	request, requestCreateErr := http.NewRequest("GET", urlString, nil)
+	if requestCreateErr != nil {
+		panic(requestCreateErr)
+	}
+	request.Header.Set("Range", "bytes=0-0")
+
+	response, responseErr = http.DefaultClient.Do(request)
+	if responseErr != nil {
+		return false
+	}
+	defer func() {
+		err := response.Body.Close()
+		if err != nil {
+
+		}
+	}()
+
+	return response.StatusCode == http.StatusOK || response.StatusCode == http.StatusPartialContent
+}
+
+func validateObjectExtension(urlString string) (string, bool) {
+	response, _ := http.Get(urlString)
+	defer func() {
+		err := response.Body.Close()
+		if err != nil {
+
+		}
+	}()
+
+	buf := make([]byte, 512)
+	n, err := response.Body.Read(buf)
+	if err != nil && err != io.EOF {
+		panic(err)
+	}
+
+	contentType := http.DetectContentType(buf[:n])
+
+	switch contentType {
+	case "application/pdf":
+		return pdf, true
+	case "image/jpeg", "image/jpg":
+		return jpg, true
+	default:
+		return "", false
+	}
+
 }

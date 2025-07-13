@@ -1,19 +1,32 @@
 package app
 
 type Repository struct {
-	taskCounter map[string]uint8
+	userObjects map[string][]Link
+	taskCounter uint8
 }
 
 func NewRepository() *Repository {
 	return &Repository{
-		taskCounter: make(map[string]uint8),
+		userObjects: make(map[string][]Link),
 	}
 }
 
 func (repository *Repository) AddNewUser(userUUID string) {
-	repository.taskCounter[userUUID] = 0
+	repository.userObjects[userUUID] = make([]Link, 0, 3)
 }
 
-func (repository *Repository) GetUserTaskCount(userUUID string) uint8 {
-	return repository.taskCounter[userUUID]
+func (repository *Repository) GetUserObjectCount(userUUID string) int {
+	return len(repository.userObjects[userUUID])
+}
+
+func (repository *Repository) AddNewObject(userUUID string, link Link) {
+	repository.userObjects[userUUID] = append(repository.userObjects[userUUID], link)
+}
+
+func (repository *Repository) AddTaskCounter() {
+	repository.taskCounter++
+}
+
+func (repository *Repository) GetTaskCount() uint8 {
+	return repository.taskCounter
 }
