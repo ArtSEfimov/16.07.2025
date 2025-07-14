@@ -9,16 +9,19 @@ type Service struct {
 }
 
 func NewService() *Service {
-	return &Service{}
+	return &Service{
+		taskID: 1,
+	}
 }
+
 func (service *Service) GetTaskID() uint64 {
 	taskID := service.taskID
 	service.taskID++
 	return taskID
 }
 
-func (service *Service) DownloadObject(objectURL string) error {
-	objectExt, isValid := validateObjectExtension(objectURL)
+func (service *Service) DownloadFile(objectURL string) error {
+	objectExt, isValid := validateFileExtension(objectURL)
 	if !isValid {
 		return fmt.Errorf("invalid file extension %service", objectExt)
 	}

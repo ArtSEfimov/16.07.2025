@@ -22,12 +22,12 @@ func main() {
 	}
 
 	// registering app handlers
-	app.NewHandler(appMux)
+	app.NewHandler(appMux, app.NewRepository(), app.NewService())
 
 	fmt.Printf("App is starting and listening on port %s...", port)
 	listenErr := appServer.ListenAndServe()
 	if listenErr != nil {
-		return
+		panic(listenErr)
 	}
 
 }

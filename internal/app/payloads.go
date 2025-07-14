@@ -1,8 +1,8 @@
 package app
 
 type Link struct {
-	URL             string `json:"url" validate:"url"`
-	ObjectExtension string
+	URL           string `json:"url" validate:"url"`
+	FileExtension string
 }
 
 type LinkRequest struct {

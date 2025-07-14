@@ -6,7 +6,7 @@ const (
 	taskLimit        = 3
 	taskLimitMessage = "task limit exceeded"
 )
-const objectsLimit = 3
+const filesLimit = 3
 const getLinksPath = "/links"
 
 const (
@@ -18,7 +18,8 @@ const (
 )
 
 const (
-	errInvalidLinkFormat   = "invalid link format"
-	errUnsupportedFileType = "unsupported file type"
-	errInaccessibleLink    = "inaccessible link"
+	errInvalidLinkFormat      = "invalid link format"
+	errUnsupportedContentType = "unsupported content type"
+	errInaccessibleLink       = "inaccessible link"
+	errLinkLimitExceeded      = "link limit exceeded"
 )

@@ -1,32 +1,33 @@
 package app
 
 type Repository struct {
-	userObjects map[string][]Link
-	taskCounter uint8
+	allTasks map[uint64]Task
+	userTaskData
 }
 
 func NewRepository() *Repository {
 	return &Repository{
-		userObjects: make(map[string][]Link),
+		allTasks: make(map[uint64]Task),
+		userTaskData: userTaskData{
+			userLinks: make(map[string][]Link),
+			userTask:  make(map[string]uint64),
+		},
 	}
 }
 
-func (repository *Repository) AddNewUser(userUUID string) {
-	repository.userObjects[userUUID] = make([]Link, 0, 3)
+func (repository *Repository) AddTask(task Task) {
+	repository.allTasks[task.ID] = task
 }
 
-func (repository *Repository) GetUserObjectCount(userUUID string) int {
-	return len(repository.userObjects[userUUID])
+func (repository *Repository) GetTaskByID(id uint64) Task {
+	return repository.allTasks[id]
 }
 
-func (repository *Repository) AddNewObject(userUUID string, link Link) {
-	repository.userObjects[userUUID] = append(repository.userObjects[userUUID], link)
+func (repository *Repository) DeleteTask(task Task) {
+	repository.userTask = make(map[string]uint64)
+	delete(repository.allTasks, task.ID)
 }
 
-func (repository *Repository) AddTaskCounter() {
-	repository.taskCounter++
-}
-
-func (repository *Repository) GetTaskCount() uint8 {
-	return repository.taskCounter
+func (repository *Repository) GetTaskCount() int {
+	return len(repository.allTasks)
 }

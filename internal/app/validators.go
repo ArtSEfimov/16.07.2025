@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	"github.com/go-playground/validator/v10"
 	"io"
 	"net/http"
@@ -11,17 +12,17 @@ const (
 	pdf = ".pdf"
 )
 
-func validateURLFormat(request *LinkRequest) ([]Link, []Link) {
+func validateURLFormat(request *LinkRequest) (map[Link]struct{}, map[Link]struct{}) {
 	newLinkValidator := validator.New()
-	var validLinks []Link
-	var invalidLinks []Link
+	var validLinks = make(map[Link]struct{})
+	var invalidLinks = make(map[Link]struct{})
 
 	for _, link := range request.Links {
 		err := newLinkValidator.Struct(link)
 		if err != nil {
-			invalidLinks = append(invalidLinks, link)
+			invalidLinks[link] = struct{}{}
 		} else {
-			validLinks = append(validLinks, link)
+			validLinks[link] = struct{}{}
 		}
 	}
 	return validLinks, invalidLinks
@@ -57,12 +58,11 @@ func isURLAccessible(urlString string) bool {
 	return response.StatusCode == http.StatusOK || response.StatusCode == http.StatusPartialContent
 }
 
-func validateObjectExtension(urlString string) (string, bool) {
+func validateFileExtension(urlString string) (string, bool) {
 	response, _ := http.Get(urlString)
 	defer func() {
 		err := response.Body.Close()
 		if err != nil {
-
 		}
 	}()
 
@@ -73,14 +73,14 @@ func validateObjectExtension(urlString string) (string, bool) {
 	}
 
 	contentType := http.DetectContentType(buf[:n])
-
+	fmt.Println(contentType)
 	switch contentType {
 	case "application/pdf":
 		return pdf, true
 	case "image/jpeg", "image/jpg":
 		return jpg, true
 	default:
-		return "", false
+		return contentType, false
 	}
 
 }
