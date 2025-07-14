@@ -144,6 +144,9 @@ func (handler *Handler) CreateTask() http.HandlerFunc {
 			task.InvalidLinks = invalidLinksSlice
 			task.ErrorMessages = errorMessages
 
+			fmt.Println(task.ValidLinks)
+			fmt.Println(task.InvalidLinks)
+
 			response.JsonResponse(w, &task, http.StatusCreated)
 		}
 	}
