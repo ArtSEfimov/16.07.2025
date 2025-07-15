@@ -85,12 +85,9 @@ func (handler *Handler) CreateTask() http.HandlerFunc {
 		}
 
 		validLinks, invalidLinks := validateURLFormat(&links)
-		var errorMessages = make(map[string]string)
 		if validLinks == nil {
 			task.InvalidLinks = append(task.InvalidLinks, invalidLinks...)
-			createErrorMessages(errorMessages, invalidLinks, errInvalidLinkFormat)
-			maps.Copy(task.ErrorMessages, errorMessages)
-			
+			createErrorMessages(task.ErrorMessages, invalidLinks, errInvalidLinkFormat)
 
 			response.JsonResponse(w, &task, http.StatusCreated)
 			return
@@ -99,8 +96,7 @@ func (handler *Handler) CreateTask() http.HandlerFunc {
 		if validLinks != nil {
 			validLinks, invalidLinks := validateURLAccessible(validLinks)
 			task.InvalidLinks = append(task.InvalidLinks, invalidLinks...)
-			createErrorMessages(errorMessages, invalidLinks, errInaccessibleLink)
-			maps.Copy(task.ErrorMessages, errorMessages)
+			createErrorMessages(task.ErrorMessages, invalidLinks, errInaccessibleLink)
 			
 			for _, link := range validLinks {
 				ext, isValid := validateFileExtension(link.URL)
