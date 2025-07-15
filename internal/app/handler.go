@@ -51,22 +51,28 @@ func (handler *Handler) CreateTask() http.HandlerFunc {
 		}()
 
 		var links LinkRequest
+		var task Task
 		bodyDecodeErr := json.NewDecoder(bodyReader).Decode(&links)
 		if bodyDecodeErr != nil && bodyDecodeErr != io.EOF { // invalid json
 			http.Error(w, bodyDecodeErr.Error(), http.StatusBadRequest)
 			return
 		}
 		if links.Links == nil {
-			task := Task{
-				ID:            handler.service.GetTaskID(),
-				Status:        taskStatusCreated,
-				ValidLinks:    nil,
-				InvalidLinks:  nil,
-				ErrorMessages: nil,
-				ArchiveURL:    "",
+			if handler.repository.isUserHasTask(userUUID) {
+				taskID := handler.repository.GetUserTaskID(userUUID)
+				task = handler.repository.GetTaskByID(taskID)
+			} else {
+				task := Task{
+					ID:            handler.service.GetTaskID(),
+					Status:        taskStatusCreated,
+					ValidLinks:    nil,
+					InvalidLinks:  nil,
+					ErrorMessages: nil,
+					ArchiveURL:    "",
+				}
+				handler.repository.AddUserTask(userUUID, task)
 			}
-
-			handler.repository.AddUserTask(userUUID, task)
+			
 			response.JsonResponse(w, &task, http.StatusCreated)
 			return
 		}
@@ -75,23 +81,29 @@ func (handler *Handler) CreateTask() http.HandlerFunc {
 		var errorMessages = make(map[string]string)
 		if validLinks == nil {
 			createErrorMessages(errorMessages, invalidLinks, errInvalidLinkFormat)
-			invalidLinksSlice := createSlice(invalidLinks)
-			task := Task{
-				ID:            handler.service.GetTaskID(),
-				Status:        taskStatusCreated,
-				ValidLinks:    nil,
-				InvalidLinks:  invalidLinksSlice,
-				ErrorMessages: errorMessages,
-				ArchiveURL:    "",
+			if handler.repository.isUserHasTask(userUUID) {
+				taskID := handler.repository.GetUserTaskID(userUUID)
+				task = handler.repository.GetTaskByID(taskID)
+				task.ErrorMessages = errorMessages
+			} else {
+				task := Task{
+					ID:            handler.service.GetTaskID(),
+					Status:        taskStatusCreated,
+					ValidLinks:    nil,
+					InvalidLinks:  invalidLinksSlice,
+					ErrorMessages: errorMessages,
+					ArchiveURL:    "",
+				}
+				
+				handler.repository.AddUserTask(userUUID, task)
 			}
 
-			handler.repository.AddUserTask(userUUID, task)
+			
 			response.JsonResponse(w, &task, http.StatusCreated)
 			return
 		}
 
 		if validLinks != nil {
-			var task Task
 			if handler.repository.isUserHasTask(userUUID) {
 				taskID := handler.repository.GetUserTaskID(userUUID)
 				task = handler.repository.GetTaskByID(taskID)
