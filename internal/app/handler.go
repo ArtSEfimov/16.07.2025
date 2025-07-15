@@ -101,43 +101,35 @@ func (handler *Handler) CreateTask() http.HandlerFunc {
 			task.InvalidLinks = append(task.InvalidLinks, invalidLinks...)
 			
 			for _, link := range validLinks {
-				var enrichedLink Link
-					if ext, isValidExt := validateFileExtension(link.URL); isValidExt {
-						enrichedLink = Link{
-							URL:           link.URL,
-							FileExtension: ext,
-						}
-						task.ValidLinks = append(task.ValidLinks, enrichedLink)
-						handler.repository.AddNewUserLink(userUUID, enrichedLink)
-						if handler.repository.GetUserLinksCount(userUUID) == filesLimit {
-							//task.Status = taskStatusProcessing
-							// TODO запускаем сервис по созданию архива
-							fmt.Println("Service IS RUNNING")
+				ext, isValid := validateFileExtension(link.URL)
+					
+				enrichedLink := Link{
+					URL:           link.URL,
+					FileExtension: ext,
+				}
+				if isValid{
+					task.ValidLinks = append(task.ValidLinks, enrichedLink)
+					handler.repository.AddNewUserLink(userUUID, enrichedLink)
+					if handler.repository.GetUserLinksCount(userUUID) == filesLimit {
+						//task.Status = taskStatusProcessing
+						// TODO запускаем сервис по созданию архива
+						fmt.Println("Service IS RUNNING")
 	
-						} else if handler.repository.GetUserLinksCount(userUUID) > filesLimit {
+					} else if handler.repository.GetUserLinksCount(userUUID) > filesLimit {
 							break
-						} else {
-							task.Status = taskStatusPending
-						}
 					} else {
-						enrichedLink = Link{
-							URL:           link.URL,
-							FileExtension: ext,
+						task.Status = taskStatusPending
 						}
-						invalidLinks[enrichedLink] = struct{}{}
-						errorMessages[enrichedLink.URL] = errUnsupportedContentType
+				} else {
+					task.InvalidLinks = append(task.InvalidLinks, enrichedLink) 
+					task.ErrorMessages[enrichedLink.URL] = fmt.Sprintf("%s: %s", errUnsupportedContentType, ext)
 					}
 				
-			}
-	
-			invalidLinksSlice := createSlice(invalidLinks)
-			task.InvalidLinks = invalidLinksSlice
-			task.ErrorMessages = errorMessages
-	
-			fmt.Println(task.ValidLinks)
-			fmt.Println(task.InvalidLinks)
+			
+
+				]
 	
 			response.JsonResponse(w, &task, http.StatusCreated)
-		}
+		
 	}
 }
