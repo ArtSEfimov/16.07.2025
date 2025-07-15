@@ -22,8 +22,8 @@ func NewHandler(router *http.ServeMux, repository *Repository, service *Service)
 	}
 
 	router.HandleFunc(fmt.Sprintf("POST %s", createTaskPath), handler.CreateTask())
-	router.HandleFunc(fmt.Sprintf("GET %s", getTaskStatusPath), handler.GetTaskStatus())
 	router.HandleFunc(fmt.Sprintf("POST %s", addLinkPath), handler.AddLink())
+	router.HandleFunc(fmt.Sprintf("GET %s", getTaskStatusPath), handler.GetTaskStatus())
 
 }
 
