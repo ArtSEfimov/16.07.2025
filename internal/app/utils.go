@@ -4,7 +4,7 @@ import (
 	"net/http"
 )
 
-func createErrorMessages(messages map[string]string, invalidLinks []Link, message string) {
+func addErrorMessages(messages map[string]string, invalidLinks []Link, message string) {
 	for invalidLink := range invalidLinks {
 		if _, ok := messages[invalidLink.URL]; !ok {
 			messages[invalidLink.URL] = message
