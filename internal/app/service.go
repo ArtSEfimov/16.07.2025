@@ -28,8 +28,51 @@ func (service *Service) DownloadFile(objectURL string) error {
 	return nil
 }
 
-func (service *Service) CreateTask(userUUID string) {
 
+func CreateZipFile(files []string) error {
+	const outputZipPath = "tmp/"
+	outputZipFile, zipCreationErr := os.Create(outputZipPath)
+	if zipCreationErr != nil {
+		return zipCreationErr
+	}
+	defer outputZipFile.Close()
+
+
+	zipWriter := zip.NewWriter(outputZipFile)
+	defer zipWriter.Close()
+
+	for i, url := range urls {
+		
+    		resp, err := http.Get(url)
+    		if err != nil {
+        		return fmt.Errorf("failed to download %s: %w", url, err)
+   		}
+    	defer resp.Body.Close()
+
+    
+        fileName = fmt.Sprintf("file%d%s", i, ext) // fallback
+
+
+   	 header := &zip.FileHeader{
+        	Name:   fileName,
+        	Method: zip.Deflate,
+    	}
+
+    	writer, err := zipWriter.CreateHeader(header)
+    	if err != nil {
+	        return err
+    	}
+
+    	if _, err := io.Copy(writer, resp.Body); err != nil {
+        	return fmt.Errorf("failed to copy data from %s: %w", url, err)
+    	}
+
+	return nil
+}
+
+
+func (service *Service) CreateTask(userUUID string, task Task) {
+	
 }
 
 func (service *Service) CreateFile(userUUID string) {
