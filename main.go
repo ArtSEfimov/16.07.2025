@@ -11,9 +11,12 @@ import (
 func main() {
 	envLoadErr := godotenv.Load(".env")
 	if envLoadErr != nil {
-		panic("Error loading .env file")
+		panic("error loading .env file")
 	}
 	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
 
 	appMux := http.NewServeMux()
 	appServer := http.Server{
@@ -21,8 +24,11 @@ func main() {
 		Handler: appMux,
 	}
 
+	repositiry := app.NewRepository()
+	service := app.NewService()
+	
 	// registering app handlers
-	app.NewHandler(appMux, app.NewRepository(), app.NewService())
+	app.NewHandler(appMux, repositiry, service)
 
 	fmt.Printf("App is starting and listening on port %s...", port)
 	listenErr := appServer.ListenAndServe()
