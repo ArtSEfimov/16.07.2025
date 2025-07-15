@@ -65,17 +65,20 @@ func (handler *Handler) CreateTask() http.HandlerFunc {
 		if handler.repository.isUserHasTask(userUUID) {
 				taskID := handler.repository.GetUserTaskID(userUUID)
 				task = handler.repository.GetTaskByID(taskID)
-		} else {
-				task := Task{
-					ID:            handler.service.GetTaskID(),
-					Status:        taskStatusCreated,
-					ValidLinks:    make([]Link, 0),
-					InvalidLinks:  make([]Link, 0),
-					ErrorMessages: make(map[string]string),
-					ArchiveURL:    "",
-				}
-				handler.repository.AddUserTask(userUUID, task)
-			}
+			const ErrTaskAlreadyExists = fmt.Sprintf("Task already exists. Use the URL %s to add a new link.", addLinkPath)
+			http.Error(w, bodyDecodeErr.Error(), http.StatusBadRequest)
+			return
+		} 
+		task := Task{
+			ID:            handler.service.GetTaskID(),
+			Status:        taskStatusCreated,
+			ValidLinks:    make([]Link, 0),
+			InvalidLinks:  make([]Link, 0),
+			ErrorMessages: make(map[string]string),
+			ArchiveURL:    "",
+		}
+		handler.repository.AddUserTask(userUUID, task)
+			
 
 		// 
 		
@@ -87,7 +90,7 @@ func (handler *Handler) CreateTask() http.HandlerFunc {
 		validLinks, invalidLinks := validateURLFormat(&links)
 		if validLinks == nil {
 			task.InvalidLinks = append(task.InvalidLinks, invalidLinks...)
-			createErrorMessages(task.ErrorMessages, invalidLinks, errInvalidLinkFormat)
+			addErrorMessages(task.ErrorMessages, invalidLinks, errInvalidLinkFormat)
 
 			response.JsonResponse(w, &task, http.StatusCreated)
 			return
@@ -96,7 +99,7 @@ func (handler *Handler) CreateTask() http.HandlerFunc {
 		if validLinks != nil {
 			validLinks, invalidLinks := validateURLAccessible(validLinks)
 			task.InvalidLinks = append(task.InvalidLinks, invalidLinks...)
-			createErrorMessages(task.ErrorMessages, invalidLinks, errInaccessibleLink)
+			addErrorMessages(task.ErrorMessages, invalidLinks, errInaccessibleLink)
 			
 			for _, link := range validLinks {
 				ext, isValid := validateFileExtension(link.URL)
@@ -171,6 +174,55 @@ func (handler *Handler) AddLink() http.HandlerFunc {
 			http.Error(w, bodyDecodeErr.Error(), http.StatusBadRequest)
 			return
 		}
+
+		if links.Links == nil {
+			response.JsonResponse(w, &task, http.StatusCreated)
+			return
+		}
+
+		validLinks, invalidLinks := validateURLFormat(&links)
+		if validLinks == nil {
+			task.InvalidLinks = append(task.InvalidLinks, invalidLinks...)
+			addErrorMessages(task.ErrorMessages, invalidLinks, errInvalidLinkFormat)
+
+			response.JsonResponse(w, &task, http.StatusOK)
+			return
+		}
+		if validLinks != nil {
+			validLinks, invalidLinks := validateURLAccessible(validLinks)
+			task.InvalidLinks = append(task.InvalidLinks, invalidLinks...)
+			addErrorMessages(task.ErrorMessages, invalidLinks, errInaccessibleLink)
+			
+			for _, link := range validLinks {
+				ext, isValid := validateFileExtension(link.URL)
+					
+				enrichedLink := Link{
+					URL:           link.URL,
+					FileExtension: ext,
+				}
+				if isValid{
+					task.ValidLinks = append(task.ValidLinks, enrichedLink)
+					handler.repository.AddNewUserLink(userUUID, enrichedLink)
+					if handler.repository.GetUserLinksCount(userUUID) == filesLimit {
+						//task.Status = taskStatusProcessing
+						// TODO запускаем сервис по созданию архива
+						fmt.Println("Service IS RUNNING")
+	
+					} else if handler.repository.GetUserLinksCount(userUUID) > filesLimit {
+							break
+					} else {
+						task.Status = taskStatusPending
+						}
+				} else {
+					task.InvalidLinks = append(task.InvalidLinks, enrichedLink) 
+					task.ErrorMessages[enrichedLink.URL] = fmt.Sprintf("%s: %s", errUnsupportedContentType, ext)
+					}
+				
+			
+
+				]
+	
+			response.JsonResponse(w, &task, http.StatusCreated)
 		
 	}
 }
