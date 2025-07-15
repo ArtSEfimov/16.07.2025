@@ -102,7 +102,6 @@ func (handler *Handler) CreateTask() http.HandlerFunc {
 			
 			for _, link := range validLinks {
 				var enrichedLink Link
-				if isURLAccessible(link.URL) {
 					if ext, isValidExt := validateFileExtension(link.URL); isValidExt {
 						enrichedLink = Link{
 							URL:           link.URL,
@@ -128,10 +127,7 @@ func (handler *Handler) CreateTask() http.HandlerFunc {
 						invalidLinks[enrichedLink] = struct{}{}
 						errorMessages[enrichedLink.URL] = errUnsupportedContentType
 					}
-				} else {
-					invalidLinks[link] = struct{}{}
-					errorMessages[link.URL] = errInaccessibleLink
-				}
+				
 			}
 	
 			invalidLinksSlice := createSlice(invalidLinks)
