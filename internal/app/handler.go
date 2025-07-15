@@ -23,6 +23,7 @@ func NewHandler(router *http.ServeMux, repository *Repository, service *Service)
 
 	router.HandleFunc(fmt.Sprintf("POST %s", createTaskPath), handler.CreateTask())
 	router.HandleFunc(fmt.Sprintf("GET %s", getTaskStatusPath), handler.GetTaskStatus())
+	router.HandleFunc(fmt.Sprintf("POST %s", addLinkPath), handler.AddLink())
 
 }
 
@@ -86,9 +87,10 @@ func (handler *Handler) CreateTask() http.HandlerFunc {
 		validLinks, invalidLinks := validateURLFormat(&links)
 		var errorMessages = make(map[string]string)
 		if validLinks == nil {
-			createErrorMessages(errorMessages, invalidLinks, errInvalidLinkFormat)
-			task.ErrorMessages = errorMessages
 			task.InvalidLinks = append(task.InvalidLinks, invalidLinks...)
+			createErrorMessages(errorMessages, invalidLinks, errInvalidLinkFormat)
+			maps.Copy(task.ErrorMessages, errorMessages)
+			
 
 			response.JsonResponse(w, &task, http.StatusCreated)
 			return
@@ -96,10 +98,9 @@ func (handler *Handler) CreateTask() http.HandlerFunc {
 
 		if validLinks != nil {
 			validLinks, invalidLinks := validateURLAccessible(validLinks)
-			
-			createErrorMessages(errorMessages, invalidLinks, errInaccessibleLink)
-			task.ErrorMessages = errorMessages
 			task.InvalidLinks = append(task.InvalidLinks, invalidLinks...)
+			createErrorMessages(errorMessages, invalidLinks, errInaccessibleLink)
+			maps.Copy(task.ErrorMessages, errorMessages)
 			
 			for _, link := range validLinks {
 				ext, isValid := validateFileExtension(link.URL)
@@ -150,5 +151,30 @@ func (handler *Handler) GetTaskStatus() http.HandlerFunc {
 		
 		http.Error(w, errUserHasNoTasks, http.StatusBadRequest)
 			return
+	}
+}
+
+
+func (handler *Handler) AddLink() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		session, cookieErr := r.Cookie(sessionID)
+		userUUID = session.Value
+		if !handler.repository.isUserHasTask(userUUID) {
+			
+			const errUserHasNoTasks = "the user has no tasks"
+			http.Error(w, errUserHasNoTasks, http.StatusBadRequest)
+			return
+			
+		}
+		taskID := handler.repository.GetUserTaskID(userUUID)
+		task = handler.repository.GetTaskByID(taskID)
+		
+		var links LinkRequest
+		bodyDecodeErr := json.NewDecoder(bodyReader).Decode(&links)
+		if bodyDecodeErr != nil && bodyDecodeErr != io.EOF { // invalid json
+			http.Error(w, bodyDecodeErr.Error(), http.StatusBadRequest)
+			return
+		}
+		
 	}
 }
