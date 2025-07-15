@@ -65,7 +65,7 @@ func (handler *Handler) CreateTask() http.HandlerFunc {
 		if handler.repository.isUserHasTask(userUUID) {
 				taskID := handler.repository.GetUserTaskID(userUUID)
 				task = handler.repository.GetTaskByID(taskID)
-			const ErrTaskAlreadyExists = fmt.Sprintf("Task already exists. Use the URL %s to add a new link.", addLinkPath)
+			
 			http.Error(w, bodyDecodeErr.Error(), http.StatusBadRequest)
 			return
 		} 
@@ -146,7 +146,6 @@ func (handler *Handler) GetTaskStatus() http.HandlerFunc {
 			response.JsonResponse(w, &task, http.StatusOK)
 			return
 			}
-		const errUserHasNoTasks = "the user has no tasks"
 		
 		http.Error(w, errUserHasNoTasks, http.StatusBadRequest)
 			return
@@ -160,7 +159,6 @@ func (handler *Handler) AddLink() http.HandlerFunc {
 		userUUID = session.Value
 		if !handler.repository.isUserHasTask(userUUID) {
 			
-			const errUserHasNoTasks = "the user has no tasks"
 			http.Error(w, errUserHasNoTasks, http.StatusBadRequest)
 			return
 			
