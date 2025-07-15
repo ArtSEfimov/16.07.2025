@@ -94,7 +94,9 @@ func (handler *Handler) CreateTask() http.HandlerFunc {
 		}
 
 		if validLinks != nil {
-			for link := range validLinks {
+			validLinks, invalidLinks := validateURLAccessible(validLinks)
+			createErrorMessages(errorMessages, invalidLinks, errInaccessibleLink)
+			for _, link := range validLinks {
 				var enrichedLink Link
 				if isURLAccessible(link.URL) {
 					if ext, isValidExt := validateFileExtension(link.URL); isValidExt {
