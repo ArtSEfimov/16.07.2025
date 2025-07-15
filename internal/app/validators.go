@@ -12,17 +12,17 @@ const (
 	pdf = ".pdf"
 )
 
-func validateURLFormat(request *LinkRequest) (map[Link]struct{}, map[Link]struct{}) {
+func validateURLFormat(request *LinkRequest) ([]Link, []Link) {
 	newLinkValidator := validator.New()
-	var validLinks = make(map[Link]struct{})
-	var invalidLinks = make(map[Link]struct{})
+	var validLinks = make([]Link, 0, len(request.Links))
+	var invalidLinks = make([]Link, 0, len(request.Links))
 
 	for _, link := range request.Links {
 		err := newLinkValidator.Struct(link)
 		if err != nil {
-			invalidLinks[link] = struct{}{}
+			invalidLinks = append(invalidLinks, link)
 		} else {
-			validLinks[link] = struct{}{}
+			validLinks = append(validLinks, link)
 		}
 	}
 	return validLinks, invalidLinks
