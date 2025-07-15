@@ -30,4 +30,5 @@ const (
 
 const (
 	const errUserHasNoTasks = "user has no any tasks"
+	const ErrTaskAlreadyExists = fmt.Sprintf("Task already exists. Use the URL %s to add a new link.", addLinkPath)
 )
