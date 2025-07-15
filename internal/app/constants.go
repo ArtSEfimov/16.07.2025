@@ -27,3 +27,7 @@ const (
 	errInaccessibleLink       = "inaccessible link"
 	errLinkLimitExceeded      = "link limit exceeded"
 )
+
+const (
+	const errUserHasNoTasks = "user has no any tasks"
+)
