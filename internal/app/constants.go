@@ -7,13 +7,17 @@ const (
 	taskLimitMessage = "task limit exceeded"
 )
 const filesLimit = 3
-const getLinksPath = "/links"
+const (
+	getLinksPath = "/create-task"
+	getTaskStatusPath = "/get-status"
+	addLinkPath = "/add-link"
+)
 
 const (
 	taskStatusCreated    = "created"
 	taskStatusPending    = "pending"
 	taskStatusProcessing = "processing"
-	taskStatusDone       = "done"
+	taskStatusCompleted       = "completed"
 	taskStatusError      = "error"
 )
 
