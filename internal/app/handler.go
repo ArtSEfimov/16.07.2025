@@ -69,7 +69,7 @@ func (handler *Handler) CreateTask() http.HandlerFunc {
 					Status:        taskStatusCreated,
 					ValidLinks:    make([]Link, 0),
 					InvalidLinks:  make([]Link, 0),
-					ErrorMessages: nil,
+					ErrorMessages: make(map[string]string),
 					ArchiveURL:    "",
 				}
 				handler.repository.AddUserTask(userUUID, task)
@@ -78,7 +78,6 @@ func (handler *Handler) CreateTask() http.HandlerFunc {
 		// 
 		
 		if links.Links == nil {
-			
 			response.JsonResponse(w, &task, http.StatusCreated)
 			return
 		}
@@ -87,43 +86,14 @@ func (handler *Handler) CreateTask() http.HandlerFunc {
 		var errorMessages = make(map[string]string)
 		if validLinks == nil {
 			createErrorMessages(errorMessages, invalidLinks, errInvalidLinkFormat)
-			if handler.repository.isUserHasTask(userUUID) {
-				taskID := handler.repository.GetUserTaskID(userUUID)
-				task = handler.repository.GetTaskByID(taskID)
-				task.ErrorMessages = errorMessages
-				task.InvalidLinks = append(task.InvalidLinks, invalidLinks...)
-			} else {
-				task := Task{
-					ID:            handler.service.GetTaskID(),
-					Status:        taskStatusCreated,
-					ValidLinks:    nil,
-					InvalidLinks:  invalidLinksSlice,
-					ErrorMessages: errorMessages,
-					ArchiveURL:    "",
-				}
-				
-				handler.repository.AddUserTask(userUUID, task)
-			}
-			
+			task.ErrorMessages = errorMessages
+			task.InvalidLinks = append(task.InvalidLinks, invalidLinks...)
+
 			response.JsonResponse(w, &task, http.StatusCreated)
 			return
 		}
 
 		if validLinks != nil {
-			if handler.repository.isUserHasTask(userUUID) {
-				taskID := handler.repository.GetUserTaskID(userUUID)
-				task = handler.repository.GetTaskByID(taskID)
-			} else {
-
-				task = Task{
-					ID:           handler.service.GetTaskID(),
-					Status:       taskStatusCreated,
-					ValidLinks:   make([]Link, 0, len(validLinks)),
-					InvalidLinks: make([]Link, 0, len(invalidLinks)),
-				}
-
-				handler.repository.AddUserTask(userUUID, task)
-			}
 			for link := range validLinks {
 				var enrichedLink Link
 				if isURLAccessible(link.URL) {
@@ -138,7 +108,7 @@ func (handler *Handler) CreateTask() http.HandlerFunc {
 							//task.Status = taskStatusProcessing
 							// TODO запускаем сервис по созданию архива
 							fmt.Println("Service IS RUNNING")
-
+	
 						} else if handler.repository.GetUserLinksCount(userUUID) > filesLimit {
 							break
 						} else {
@@ -157,14 +127,14 @@ func (handler *Handler) CreateTask() http.HandlerFunc {
 					errorMessages[link.URL] = errInaccessibleLink
 				}
 			}
-
+	
 			invalidLinksSlice := createSlice(invalidLinks)
 			task.InvalidLinks = invalidLinksSlice
 			task.ErrorMessages = errorMessages
-
+	
 			fmt.Println(task.ValidLinks)
 			fmt.Println(task.InvalidLinks)
-
+	
 			response.JsonResponse(w, &task, http.StatusCreated)
 		}
 	}
