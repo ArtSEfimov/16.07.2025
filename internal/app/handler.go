@@ -57,21 +57,27 @@ func (handler *Handler) CreateTask() http.HandlerFunc {
 			http.Error(w, bodyDecodeErr.Error(), http.StatusBadRequest)
 			return
 		}
-		if links.Links == nil {
-			if handler.repository.isUserHasTask(userUUID) {
+		
+		// Check or create Task
+	
+		if handler.repository.isUserHasTask(userUUID) {
 				taskID := handler.repository.GetUserTaskID(userUUID)
 				task = handler.repository.GetTaskByID(taskID)
-			} else {
+		} else {
 				task := Task{
 					ID:            handler.service.GetTaskID(),
 					Status:        taskStatusCreated,
-					ValidLinks:    nil,
-					InvalidLinks:  nil,
+					ValidLinks:    make([]Link, 0),
+					InvalidLinks:  make([]Link, 0),
 					ErrorMessages: nil,
 					ArchiveURL:    "",
 				}
 				handler.repository.AddUserTask(userUUID, task)
 			}
+
+		// 
+		
+		if links.Links == nil {
 			
 			response.JsonResponse(w, &task, http.StatusCreated)
 			return
@@ -85,6 +91,7 @@ func (handler *Handler) CreateTask() http.HandlerFunc {
 				taskID := handler.repository.GetUserTaskID(userUUID)
 				task = handler.repository.GetTaskByID(taskID)
 				task.ErrorMessages = errorMessages
+				task.InvalidLinks = append(task.InvalidLinks, invalidLinks...)
 			} else {
 				task := Task{
 					ID:            handler.service.GetTaskID(),
@@ -97,7 +104,6 @@ func (handler *Handler) CreateTask() http.HandlerFunc {
 				
 				handler.repository.AddUserTask(userUUID, task)
 			}
-
 			
 			response.JsonResponse(w, &task, http.StatusCreated)
 			return
