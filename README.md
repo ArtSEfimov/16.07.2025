@@ -13,7 +13,7 @@
 ## ⚙️ Установка
 
 1. Клонируйте репозиторий:
-2. 
+   
 ```bash
 git clone https://github.com/ArtSEfimov/golang_education_task_3.git
 cd golang_education_task_3
