@@ -21,7 +21,8 @@ func NewHandler(router *http.ServeMux, repository *Repository, service *Service)
 		repository: repository,
 	}
 
-	router.HandleFunc(fmt.Sprintf("POST %s", getLinksPath), handler.CreateTask())
+	router.HandleFunc(fmt.Sprintf("POST %s", createTaskPath), handler.CreateTask())
+	router.HandleFunc(fmt.Sprintf("GET %s", getTaskStatusPath), handler.GetTaskStatus())
 
 }
 
@@ -131,5 +132,23 @@ func (handler *Handler) CreateTask() http.HandlerFunc {
 	
 			response.JsonResponse(w, &task, http.StatusCreated)
 		
+	}
+}
+
+
+func (handler *Handler) GetTaskStatus() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		session, cookieErr := r.Cookie(sessionID)
+		userUUID = session.Value
+		if handler.repository.isUserHasTask(userUUID) {
+				taskID := handler.repository.GetUserTaskID(userUUID)
+				task = handler.repository.GetTaskByID(taskID)
+			response.JsonResponse(w, &task, http.StatusOK)
+			return
+			}
+		const errUserHasNoTasks = "the user has no tasks"
+		
+		http.Error(w, errUserHasNoTasks, http.StatusBadRequest)
+			return
 	}
 }
