@@ -5,19 +5,20 @@ const sessionID = "session_id"
 const (
 	taskLimit        = 3
 	taskLimitMessage = "task limit exceeded"
+	filesLimit       = 3
 )
-const filesLimit = 3
+
 const (
-	getLinksPath = "/create-task"
+	createTaskPath    = "/create-task"
 	getTaskStatusPath = "/get-status"
-	addLinkPath = "/add-link"
+	addLinkPath       = "/add-link"
 )
 
 const (
 	taskStatusCreated    = "created"
 	taskStatusPending    = "pending"
 	taskStatusProcessing = "processing"
-	taskStatusCompleted       = "completed"
+	taskStatusCompleted  = "completed"
 	taskStatusError      = "error"
 )
 
@@ -25,10 +26,13 @@ const (
 	errInvalidLinkFormat      = "invalid link format"
 	errUnsupportedContentType = "unsupported content type"
 	errInaccessibleLink       = "inaccessible link"
-	errLinkLimitExceeded      = "link limit exceeded"
+	errZipFileCreation        = "failed to create ZIP archive. Please try again later."
+	errCannotAddLinkToTask    = "cannot add link to task"
 )
 
 const (
-	const errUserHasNoTasks = "user has no any tasks"
-	const ErrTaskAlreadyExists = fmt.Sprintf("Task already exists. Use the URL %s to add a new link.", addLinkPath)
+	errUserHasNoTaskByID = "user has no tasks by ID"
+	errUserNotFound      = "user not found"
 )
+
+const baseOutputZipPath = "static"

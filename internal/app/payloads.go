@@ -17,3 +17,7 @@ type Task struct {
 	ErrorMessages map[string]string `json:"error_messages"`
 	ArchiveURL    string            `json:"archiveURL"`
 }
+
+func (task *Task) getValidLinksCount() int {
+	return len(task.ValidLinks)
+}

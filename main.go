@@ -24,11 +24,12 @@ func main() {
 		Handler: appMux,
 	}
 
-	repositiry := app.NewRepository()
+	repository := app.NewRepository()
 	service := app.NewService()
-	
+
 	// registering app handlers
-	app.NewHandler(appMux, repositiry, service)
+	app.NewHandler(appMux, repository, service)
+	appMux.Handle("/static/", http.FileServer(http.Dir(".")))
 
 	fmt.Printf("App is starting and listening on port %s...", port)
 	listenErr := appServer.ListenAndServe()

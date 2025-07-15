@@ -1,7 +1,6 @@
 package app
 
 import (
-	"fmt"
 	"github.com/go-playground/validator/v10"
 	"io"
 	"net/http"
@@ -86,7 +85,7 @@ func validateFileExtension(urlString string) (string, bool) {
 	}
 
 	contentType := http.DetectContentType(buf[:n])
-	fmt.Println(contentType)
+
 	switch contentType {
 	case "application/pdf":
 		return pdf, true

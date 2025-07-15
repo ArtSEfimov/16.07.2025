@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"path/filepath"
 )
 
 type Service struct {
@@ -28,65 +29,24 @@ func (service *Service) DownloadFile(objectURL string) error {
 	return nil
 }
 
+func (service *Service) CreateZipFile(task *Task) {
+	errChan := make(chan error)
 
-func CreateZipFile(files []string) error {
-	const outputZipPath = "tmp/"
-	outputZipFile, zipCreationErr := os.Create(outputZipPath)
-	if zipCreationErr != nil {
-		return zipCreationErr
-	}
-	defer outputZipFile.Close()
+	filename := fmt.Sprintf("Archive%d.zip", task.ID)
+	outputZipPath := filepath.Join(baseOutputZipPath, filename)
 
+	task.Status = taskStatusProcessing
 
-	zipWriter := zip.NewWriter(outputZipFile)
-	defer zipWriter.Close()
+	go createZipFile(task, errChan, outputZipPath)
 
-	for i, url := range urls {
-		
-    		resp, err := http.Get(url)
-    		if err != nil {
-        		return fmt.Errorf("failed to download %s: %w", url, err)
-   		}
-    	defer resp.Body.Close()
-
-    
-        fileName = fmt.Sprintf("file%d%s", i, ext) // fallback
-
-
-   	 header := &zip.FileHeader{
-        	Name:   fileName,
-        	Method: zip.Deflate,
-    	}
-
-    	writer, err := zipWriter.CreateHeader(header)
-    	if err != nil {
-	        return err
-    	}
-
-    	if _, err := io.Copy(writer, resp.Body); err != nil {
-        	return fmt.Errorf("failed to copy data from %s: %w", url, err)
-    	}
-
-	return nil
-}
-
-
-func (service *Service) CreateTask(userUUID string, task Task) {
-	
-}
-
-func (service *Service) CreateFile(userUUID string) {
-
-	//out, err := os.Create(filename)
-	//if err != nil {
-	//	return err
-	//}
-	//defer out.Close()
-	//_, err = io.Copy(out, io.MultiReader(bytes.NewReader(buf[:n]), resp.Body))
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//fmt.Println("Сохранено как:", filename)
-	//return nil
+	go func() {
+		err := <-errChan
+		if err != nil {
+			task.Status = taskStatusError
+			task.ErrorMessages[fmt.Sprintf("task %d %s", task.ID, errZipFileCreation)] = err.Error()
+		} else {
+			task.Status = taskStatusCompleted
+			task.ArchiveURL = fmt.Sprintf("http://localhost:8080/%s/%s", baseOutputZipPath, filename)
+		}
+	}()
 }
