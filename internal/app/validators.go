@@ -28,6 +28,19 @@ func validateURLFormat(request *LinkRequest) ([]Link, []Link) {
 	return validLinks, invalidLinks
 }
 
+func validateURLAccessible(links []Link) ([]Link, []Link) {
+	validLinks := make([]Link, 0, len(links))
+	invalidLinks := make([]Link, 0, len(links))
+	for _, link := range links {
+		if isURLAccessible(link.URL) {
+			validLinks = append(validLinks, link)
+		} else {
+			invalidLinks = append(invalidLinks, link)
+		}
+	}
+	return validLinks, invalidLinks
+}
+
 func isURLAccessible(urlString string) bool {
 	response, responseErr := http.Head(urlString)
 	if responseErr == nil && response.StatusCode == http.StatusOK {
